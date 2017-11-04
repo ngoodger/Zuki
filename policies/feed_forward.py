@@ -26,19 +26,19 @@ class FeedForwardPolicy():
         out_fanin_size = (state_size if hidden_size == 0
                           else hidden_size[-1])
         self.weights_mean = tf.Variable(tf.random_uniform([out_fanin_size,
-                                                           action_size], -0.01,
-                                                           0.01),
+                                                           action_size], -0.1,
+                                                           0.1),
                                          dtype=tf.float32,
                                          name="w_mean")
         self.weights_stddev = tf.Variable(tf.random_uniform([out_fanin_size,
                                            action_size],
-                                           -0.01, 0.01), dtype=tf.float32,
+                                           -0.1, 0.1), dtype=tf.float32,
                                            name="w_stddev")
-        self.bias_mean = tf.Variable(tf.random_uniform([action_size], -0.01,
-                                                        0.01),
+        self.bias_mean = tf.Variable(tf.random_uniform([action_size], -0.1,
+                                                        0.1),
                                       dtype=tf.float32, name="b_mean")
-        self.bias_stddev = tf.Variable(tf.random_uniform([action_size], -0.01,
-                                        0.01),
+        self.bias_stddev = tf.Variable(tf.random_uniform([action_size], -0.1,
+                                        0.1),
                                         dtype=tf.float32, name="b_stddev")
         self.state = tf.placeholder(tf.float32, [1, state_size], name="state")
 
@@ -89,7 +89,7 @@ class FeedForwardPolicy():
         return step_loss
 
     def save_tensorboard(self, episode_reward):
-        feed_dict={self.episode_reward: episode_reward}
+        feed_dict={self.episode_reward: episode_reward[0]}
         print("rewards" + str(episode_reward))
         summary = self.sess.run(self.merged, feed_dict)
         #print("rewards")

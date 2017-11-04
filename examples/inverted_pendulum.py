@@ -5,7 +5,7 @@ from zuki.policy_gradient_methods.monte_carlo import MonteCarloPolicyGradient
 
 def main():
     env = gym.make('Pendulum-v0')
-    print(env.observation_space.shape[0])
+    print(env.observation_space)
     print(env.observation_space.high)
     print(env.observation_space.low)
     print(env.action_space)

@@ -5,12 +5,13 @@ import numpy as np
 
 
 def observation_state(observation):
-    return np.reshape(observation, (1, 3))
+    #return np.reshape(observation, (1, 3))
+    return np.reshape(observation, (1, 1))
 
 
 class MonteCarloPolicyGradient:
     def __init__(self, env, learning_rate, PolicyClass,
-            render=False, saved_policy:str=""):
+            render=False, saved_policy: str=""):
         self.env = env
         action_space = env.action_space.shape[0]
         observation_space = env.observation_space.shape[0]
@@ -19,7 +20,7 @@ class MonteCarloPolicyGradient:
                              learning_rate)
         #policy.loss = (policy.normal_dist.log_prob(policy.action) *
         #               policy.target - 1e-1 * policy.normal_dist.entropy())
-        policy.loss = (policy.normal_dist.log_prob(policy.action) *
+        policy.loss = -(policy.normal_dist.log_prob(policy.action) *
                        policy.target)
         policy.train = (tf.train.AdamOptimizer(learning_rate)
                         .minimize(policy.loss))
