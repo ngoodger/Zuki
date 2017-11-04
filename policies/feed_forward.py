@@ -18,6 +18,8 @@ class FeedForwardPolicy():
     def __init__(self, state_size: int,
                  action_size: int, learning_rate: float, hidden_size: int=0) -> None:
         tf.reset_default_graph()
+        self.episode_reward= tf.placeholder(tf.float32, shape=[],
+                                    name="episode_reward")
         self.state = tf.placeholder(tf.float32, shape=[state_size],
                                     name="state")
         self.target = tf.placeholder(tf.float32, name="target")
@@ -64,6 +66,7 @@ class FeedForwardPolicy():
             self.sess.run(tf.global_variables_initializer())
         else:
             self.saver.restore(self.sess, "saved_policy_path")
+        tf.summary.scalar('episode_reward', self.episode_reward)
         variable_summaries(self.weights_mean)
         variable_summaries(self.weights_stddev)
         variable_summaries(self.bias_mean)
@@ -82,11 +85,16 @@ class FeedForwardPolicy():
                      self.action: action}
         ops = [self.train, 
                self.loss]
-        _, step_loss,  = self.sess.run(ops, feed_dict)
+        _, step_loss = self.sess.run(ops, feed_dict)
         return step_loss
 
-    def save_tensorboard(self):
-        summary = self.sess.run(self.merged)
+    def save_tensorboard(self, episode_reward):
+        feed_dict={self.episode_reward: episode_reward}
+        print("rewards" + str(episode_reward))
+        summary = self.sess.run(self.merged, feed_dict)
+        #print("rewards")
+        #print(episode_reward)
+        #print(episode_reward_ret)
         self.train_writer.add_summary(summary, self.save_idx)
         self.save_idx += 1
 

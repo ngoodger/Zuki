@@ -17,8 +17,10 @@ class MonteCarloPolicyGradient:
         self.episode_memory = []
         policy = PolicyClass(observation_space, action_space,
                              learning_rate)
+        #policy.loss = (policy.normal_dist.log_prob(policy.action) *
+        #               policy.target - 1e-1 * policy.normal_dist.entropy())
         policy.loss = (policy.normal_dist.log_prob(policy.action) *
-                       policy.target - 1e-1 * policy.normal_dist.entropy())
+                       policy.target)
         policy.train = (tf.train.AdamOptimizer(learning_rate)
                         .minimize(policy.loss))
         policy.setup(saved_policy)
@@ -46,7 +48,7 @@ class MonteCarloPolicyGradient:
             for j in range(len(self.episode_memory) - 1, 0, -1):
                 state = self.episode_memory[j][0]
                 action = self.episode_memory[j][1]
-                step_return += self.episode_memory[j][2]
+                step_return += self.episode_memory[j][2][0]
                 #print("values")
                 #print(state)
                 #print(len(step_return))
@@ -55,8 +57,7 @@ class MonteCarloPolicyGradient:
             #rewards.append(step_return)
             if (len(rewards) > 1000):
                 rewards.pop(0)
-            print(step_return)
             #print("rewards")
             #print(episode_num)
             #print(step_return)
-            self.policy.save_tensorboard()
+            self.policy.save_tensorboard(step_return)
