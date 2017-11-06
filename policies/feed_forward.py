@@ -18,27 +18,31 @@ class FeedForwardPolicy():
     def __init__(self, state_size: int,
                  action_size: int, learning_rate: float, hidden_size: int=0) -> None:
         tf.reset_default_graph()
+        init_value = 0.01 
         self.episode_reward= tf.placeholder(tf.float32, shape=[],
                                     name="episode_reward")
         self.state = tf.placeholder(tf.float32, shape=[state_size],
                                     name="state")
         self.target = tf.placeholder(tf.float32, name="target")
+        self.applied_action = tf.placeholder(tf.float32,shape=[action_size], name="applied_action")
         out_fanin_size = (state_size if hidden_size == 0
                           else hidden_size[-1])
+        print("out_fanin_size: " + str(out_fanin_size))
+        print("action_size: " + str(action_size))
         self.weights_mean = tf.Variable(tf.random_uniform([out_fanin_size,
-                                                           action_size], -0.1,
-                                                           0.1),
+                                                           action_size], -init_value,
+                                                           init_value),
                                          dtype=tf.float32,
                                          name="w_mean")
         self.weights_stddev = tf.Variable(tf.random_uniform([out_fanin_size,
                                            action_size],
-                                           -0.1, 0.1), dtype=tf.float32,
+                                           -init_value, init_value), dtype=tf.float32,
                                            name="w_stddev")
-        self.bias_mean = tf.Variable(tf.random_uniform([action_size], -0.1,
-                                                        0.1),
+        self.bias_mean = tf.Variable(tf.random_uniform([action_size], -init_value,
+                                                        init_value),
                                       dtype=tf.float32, name="b_mean")
-        self.bias_stddev = tf.Variable(tf.random_uniform([action_size], -0.1,
-                                        0.1),
+        self.bias_stddev = tf.Variable(tf.random_uniform([action_size], -init_value,
+                                         init_value),
                                         dtype=tf.float32, name="b_stddev")
         self.state = tf.placeholder(tf.float32, [1, state_size], name="state")
 
@@ -48,6 +52,8 @@ class FeedForwardPolicy():
                                self.bias_mean)
             self.stddev = tf.add(tf.matmul(self.state, self.weights_stddev),
                                  self.bias_stddev)
+            #self.normal_dist = tf.contrib.distributions.Normal(self.mean,
+            #                                                   0.1)
             self.normal_dist = tf.contrib.distributions.Normal(self.mean,
                                                                self.stddev)
 
@@ -55,7 +61,7 @@ class FeedForwardPolicy():
 
         self.action = tf.clip_by_value(self.action_unclipped,
                                        clip_value_min=-1.0,
-                                       clip_value_max=1.0)
+                                       clip_value_max=1.0, name="action")
         self.save_idx = 0
 
 
@@ -69,8 +75,8 @@ class FeedForwardPolicy():
         tf.summary.scalar('episode_reward', self.episode_reward)
         variable_summaries(self.weights_mean)
         variable_summaries(self.weights_stddev)
-        variable_summaries(self.bias_mean)
-        variable_summaries(self.bias_stddev)
+        #variable_summaries(self.bias_mean)
+        #variable_summaries(self.bias_stddev)
         self.merged = tf.summary.merge_all()
         self.train_writer = tf.summary.FileWriter('./train',
                                                       self.sess.graph)
@@ -81,15 +87,19 @@ class FeedForwardPolicy():
 
 
     def adjust(self, state: np.array, target: float, action: np.array):
+        #print("state: " + str(state))
+        #print("target: " + srt(target))
         feed_dict = {self.state: state, self.target: target,
-                     self.action: action}
+                     self.applied_action: action[0][0]}
+        #feed_dict = {self.state: state, self.target: target,
+        #             self.action: action}
         ops = [self.train, 
                self.loss]
         _, step_loss = self.sess.run(ops, feed_dict)
         return step_loss
 
     def save_tensorboard(self, episode_reward):
-        feed_dict={self.episode_reward: episode_reward[0]}
+        feed_dict={self.episode_reward: episode_reward}
         print("rewards" + str(episode_reward))
         summary = self.sess.run(self.merged, feed_dict)
         #print("rewards")
