@@ -12,8 +12,7 @@ class MonteCarloPolicyGradient:
         self.env = env
         self.action_space = env.action_space.shape[0]
         self.observation_space = env.observation_space.shape[0]
-        policy = PolicyClass(self.observation_space, self.action_space,
-                             learning_rate)
+        policy = PolicyClass(self.observation_space, self.action_space)
         #policy.loss = (policy.normal_dist.log_prob(policy.action) *
         #               policy.target - 1e-1 * policy.normal_dist.entropy())
         #policy.loss = -(policy.normal_dist.log_prob(policy.applied_action) *
@@ -52,14 +51,14 @@ class MonteCarloPolicyGradient:
             step_return = 0.0
             for j in range(len(episode_memories) - 1, -1, -1):
                 #print(episode_memories)
-                #time.sleep(1)
+                time.sleep(1)
                 state = episode_memories[j].state
                 action = episode_memories[j].action
                 step_return += episode_memories[j].reward[0]
-                #print("j " + str(j))
-                #print("state " + str(state))
-                #print("step_return " + str(step_return))
-                #print("action " + str(action))
+                print("j " + str(j))
+                print("state " + str(state))
+                print("step_return " + str(step_return))
+                print("action " + str(action))
                 #print("values")
                 #print(state)
                 #print(action)

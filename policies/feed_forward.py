@@ -16,9 +16,9 @@ def variable_summaries(var):
 
 class FeedForwardPolicy():
     def __init__(self, state_size: int,
-                 action_size: int, learning_rate: float, hidden_size: int=0) -> None:
+                 action_size: int, hidden_size: int=0) -> None:
         tf.reset_default_graph()
-        init_value = 0.01 
+        init_value = 0.1 
         self.episode_reward= tf.placeholder(tf.float32, shape=[],
                                     name="episode_reward")
         self.state = tf.placeholder(tf.float32, shape=[state_size],
@@ -60,10 +60,9 @@ class FeedForwardPolicy():
         self.action_unclipped = self.normal_dist._sample_n(1)
 
         self.action = tf.clip_by_value(self.action_unclipped,
-                                       clip_value_min=-1.0,
-                                       clip_value_max=1.0, name="action")
+                                       clip_value_min=-100.0,
+                                       clip_value_max=100.0, name="action")
         self.save_idx = 0
-
 
     def setup(self, saved_policy_path: str=""):
         self.sess = tf.Session()
@@ -75,36 +74,30 @@ class FeedForwardPolicy():
         tf.summary.scalar('episode_reward', self.episode_reward)
         variable_summaries(self.weights_mean)
         variable_summaries(self.weights_stddev)
-        #variable_summaries(self.bias_mean)
-        #variable_summaries(self.bias_stddev)
+        variable_summaries(self.bias_mean)
+        variable_summaries(self.bias_stddev)
         self.merged = tf.summary.merge_all()
         self.train_writer = tf.summary.FileWriter('./train',
                                                       self.sess.graph)
-
 
     def choose_action(self, state: np.array):
         return self.sess.run(self.action, {self.state: state})
 
 
     def adjust(self, state: np.array, target: float, action: np.array):
-        #print("state: " + str(state))
-        #print("target: " + srt(target))
         feed_dict = {self.state: state, self.target: target,
                      self.applied_action: action[0][0]}
-        #feed_dict = {self.state: state, self.target: target,
-        #             self.action: action}
-        ops = [self.train, 
-               self.loss]
+        try:
+            ops = (self.train, self.loss)
+        except AttributeError:
+            print("Must define policy.loss and policy.train to adjust policy")
+            raise
         _, step_loss = self.sess.run(ops, feed_dict)
         return step_loss
 
     def save_tensorboard(self, episode_reward):
         feed_dict={self.episode_reward: episode_reward}
-        print("rewards" + str(episode_reward))
         summary = self.sess.run(self.merged, feed_dict)
-        #print("rewards")
-        #print(episode_reward)
-        #print(episode_reward_ret)
         self.train_writer.add_summary(summary, self.save_idx)
         self.save_idx += 1
 
