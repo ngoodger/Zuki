@@ -18,7 +18,7 @@ class MonteCarloPolicyGradient:
         #policy.loss = -(policy.normal_dist.log_prob(policy.applied_action) *
         #               policy.target + 1e-1 * policy.normal_dist.entropy())
         policy.loss = -(policy.normal_dist.log_prob(policy.applied_action) *
-                       policy.target)
+                       policy.target + 1e-1 * policy.normal_dist.entropy())
         policy.train = (tf.train.AdamOptimizer(learning_rate)
                         .minimize(policy.loss))
         policy.setup(saved_policy)
@@ -49,24 +49,14 @@ class MonteCarloPolicyGradient:
                 episode_memories.append(EpisodeMemory(state=state_old, action=action, reward=reward[0]))
                 print(reward.shape)
             step_return = 0.0
-            for j in range(len(episode_memories) - 1, -1, -1):
+            for step_memory in reversed(episode_memories):
                 #print(episode_memories)
                 time.sleep(1)
-                state = episode_memories[j].state
-                action = episode_memories[j].action
-                step_return += episode_memories[j].reward[0]
-                print("j " + str(j))
+                state = step_memory.state
+                action = step_memory.action
+                step_return += step_memory.reward[0]
                 print("state " + str(state))
                 print("step_return " + str(step_return))
                 print("action " + str(action))
-                #print("values")
-                #print(state)
-                #print(action)
                 self.policy.adjust(state, step_return, action)
-            #rewards.append(step_return)
-            if (len(rewards) > 1000):
-                rewards.pop(0)
-            #print("rewards")
-            #print(episode_num)
-            #print(step_return)
             self.policy.save_tensorboard(step_return)
