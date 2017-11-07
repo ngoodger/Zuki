@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+from typing import Union
 
 def variable_summaries(var):
     name = var.op.name
@@ -16,8 +17,12 @@ def variable_summaries(var):
 
 class FeedForwardPolicy():
     def __init__(self, state_size: int,
-                 action_size: int, hidden_size: int=0) -> None:
+                 action_size: int, hidden_size: int=0,
+                 random_seed: Union[None, int]=None) -> None:
         tf.reset_default_graph()
+        if random_seed is not None:
+            print("using non random seed")
+            tf.set_random_seed(random_seed)
         init_value = 0.1 
         self.episode_reward= tf.placeholder(tf.float32, shape=[],
                                     name="episode_reward")

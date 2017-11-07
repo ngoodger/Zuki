@@ -10,15 +10,16 @@ class TestContinuousActionEnv(object):
         self.info = None
         self.observation = np.zeros(1)
         self.reward = np.zeros((1, 1))
+        random.seed(0)
 
     def reset(self):
-        self.state = random.random()
+        self.state = 2 * random.random() - 1.0
         self.step_count = 0
         self.observation[0] = self.state
         return self.observation
 
     def step(self, action):
-        self.state -= action
+        self.state += action
         self.reward[0, 0] = -1 * abs(self.state)
         self.step_count += 1
         terminal = False if self.step_count < 2 else True
