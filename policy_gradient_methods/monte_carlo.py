@@ -36,11 +36,16 @@ class MonteCarloPolicyGradient:
             step_count = 0
             while not terminal:
                 step_count += 1
-                action = self.policy.choose_action(state)
+                action, action_clipped = self.policy.choose_action(state)
+                print("numpy shape " + str(action.shape))
+                #if action > 1.0:
+                #    action = np.reshape(np.array((1.0)), (1,1, 1))
+                #if action < -1.0:
+                #    action = np.reshape(np.array((-1.0)), (1,1, 1))
                 #print("action: " + str(action))
                 state_old = np.copy(state)
                 #print("state_old: " + str(state_old))
-                observation, reward, terminal, info = self.env.step(action)
+                observation, reward, terminal, info = self.env.step(action_clipped)
                 self.env.render() if self.render else None
                 state = self.observation_state(observation)
                 episode_memories.append(EpisodeMemory(state=state_old, action=action, reward=reward[0]))

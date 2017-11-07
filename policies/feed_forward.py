@@ -57,16 +57,14 @@ class FeedForwardPolicy():
                                self.bias_mean)
             self.stddev = tf.add(tf.matmul(self.state, self.weights_stddev),
                                  self.bias_stddev)
-            #self.normal_dist = tf.contrib.distributions.Normal(self.mean,
-            #                                                   0.1)
             self.normal_dist = tf.contrib.distributions.Normal(self.mean,
                                                                self.stddev)
 
-        self.action_unclipped = self.normal_dist._sample_n(1)
+        self.action = self.normal_dist._sample_n(1)
 
-        self.action = tf.clip_by_value(self.action_unclipped,
-                                       clip_value_min=-100.0,
-                                       clip_value_max=100.0, name="action")
+        self.action_clipped = tf.clip_by_value(self.action,
+                                       clip_value_min=-1000.0,
+                                       clip_value_max=1000.0, name="action")
         self.save_idx = 0
 
     def setup(self, saved_policy_path: str=""):
@@ -86,7 +84,7 @@ class FeedForwardPolicy():
                                                       self.sess.graph)
 
     def choose_action(self, state: np.array):
-        return self.sess.run(self.action, {self.state: state})
+        return self.sess.run((self.action, self.action_clipped), {self.state: state})
 
 
     def adjust(self, state: np.array, target: float, action: np.array):

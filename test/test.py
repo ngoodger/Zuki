@@ -4,7 +4,7 @@ from zuki.test.test_continuous_action_env import TestContinuousActionEnv
 
 
 def main():
-    env = TestContinuousActionEnv()
+    env = TestContinuousActionEnv(1.0, 0.0)
     print(env.observation_space)
     print(env.observation_space.high)
     print(env.observation_space.low)
