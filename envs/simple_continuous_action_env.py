@@ -3,7 +3,7 @@ import random
 import numpy as np
 
 
-class TestContinuousActionEnv(object):
+class SimpleContinuousActionEnv(object):
     def __init__(self, action_scale, bias):
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(1,))
         self.observation_space = spaces.Box(low=-1.0, high=1.0, shape=(1,))

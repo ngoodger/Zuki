@@ -14,7 +14,7 @@ def main():
     learning_rate = 1e-3
     pg = MonteCarloPolicyGradient(env, learning_rate,
                                   FeedForwardPolicy, render=False)
-    pg.run()
+    pg.run(1000000)
 
 
 if __name__ == "__main__":
