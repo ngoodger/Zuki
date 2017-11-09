@@ -13,7 +13,7 @@ def test_continuous_action_env_positive():
                                   FeedForwardPolicy,
                                   render=False,
                                   random_seed=0, reward_sma_len=1000)
-    avg_return = pg.run(10000)
+    avg_return = pg.run(200000)
     print("reward mean" + str(avg_return))
     assert(avg_return > -0.4)
 

@@ -18,7 +18,7 @@ class MonteCarloPolicyGradient:
         self.env = env
         self.action_space = env.action_space.shape[0]
         self.observation_space = env.observation_space.shape[0]
-        policy = PolicyClass(self.observation_space, self.action_space, random_seed=random_seed)
+        policy = PolicyClass(self.observation_space, self.action_space, random_seed=random_seed, hidden_size=[8])
         policy.loss = -(policy.normal_dist.log_prob(policy.applied_action) *
                        policy.target + 1e-1 * policy.normal_dist.entropy())
         policy.train = (tf.train.AdamOptimizer(learning_rate)
@@ -44,10 +44,6 @@ class MonteCarloPolicyGradient:
                 step_count += 1
                 action, action_clipped = self.policy.choose_action(state)
                 #print("numpy shape " + str(action.shape))
-                #if action > 1.0:
-                #    action = np.reshape(np.array((1.0)), (1,1, 1))
-                #if action < -1.0:
-                #    action = np.reshape(np.array((-1.0)), (1,1, 1))
                 #print("action: " + str(action))
                 state_old = np.copy(state)
                 #print("state_old: " + str(state_old))

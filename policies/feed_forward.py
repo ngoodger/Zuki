@@ -15,50 +15,77 @@ def variable_summaries(var):
             tf.summary.scalar('min', tf.reduce_min(var))
             tf.summary.histogram('histogram', var)
 
+
+def init_var(name: str, size: list, init_value_max_magnitude: float):
+    print("HEELLLO" + str(size))
+    return tf.Variable(tf.random_uniform(size,
+                       -init_value_max_magnitude,
+                       init_value_max_magnitude),
+                       dtype=tf.float32,
+                       name=name)
+
+
 class FeedForwardPolicy():
     def __init__(self, state_size: int,
-                 action_size: int, hidden_size: int=0,
-                 random_seed: Union[None, int]=None) -> None:
+            action_size: int, hidden_size: list=[],
+                 random_seed: Union[None, int]=None,
+                  init_value_max_magnitude: float=0.1) -> None:
         tf.reset_default_graph()
         if random_seed is not None:
             print("using non random seed")
             tf.set_random_seed(random_seed)
-        init_value = 0.1 
+        init_value_magnitude_max = 0.1 
+
+        """
+        PLACEHOLDERS
+        """
         self.episode_reward= tf.placeholder(tf.float32, shape=[],
                                     name="episode_reward")
-        self.state = tf.placeholder(tf.float32, shape=[state_size],
-                                    name="state")
+        self.state = tf.placeholder(tf.float32, [1, state_size], name="state")
         self.target = tf.placeholder(tf.float32, name="target")
         self.applied_action = tf.placeholder(tf.float32,shape=[action_size], name="applied_action")
-        out_fanin_size = (state_size if hidden_size == 0
-                          else hidden_size[-1])
-        print("out_fanin_size: " + str(out_fanin_size))
-        print("action_size: " + str(action_size))
-        self.weights_mean = tf.Variable(tf.random_uniform([out_fanin_size,
-                                                           action_size], -init_value,
-                                                           init_value),
-                                         dtype=tf.float32,
-                                         name="w_mean")
-        self.weights_stddev = tf.Variable(tf.random_uniform([out_fanin_size,
-                                           action_size],
-                                           -init_value, init_value), dtype=tf.float32,
-                                           name="w_stddev")
-        self.bias_mean = tf.Variable(tf.random_uniform([action_size], -init_value,
-                                                        init_value),
-                                      dtype=tf.float32, name="b_mean")
-        self.bias_stddev = tf.Variable(tf.random_uniform([action_size], -init_value,
-                                         init_value),
-                                        dtype=tf.float32, name="b_stddev")
-        self.state = tf.placeholder(tf.float32, [1, state_size], name="state")
+        """
+        HIDDEN LAYERS 
+        """
+        self.bias_mean_hidden = [None] * len(hidden_size)
+        self.bias_stddev_hidden = [None] * len(hidden_size)
+        self.weights_mean_hidden = [None] * len(hidden_size)
+        self.weights_stddev_hidden = [None] * len(hidden_size)
+        self.hidden_mean_logits = [None] * len(hidden_size)
+        self.hidden_mean_output = [None] * len(hidden_size)
+        self.hidden_stddev_logits = [None] * len(hidden_size)
+        self.hidden_stddev_output = [None] * len(hidden_size)
+        for i, layer_size in enumerate(hidden_size):
+            fanin_size = state_size if i == 0 else hidden_size[i - 1]
+            self.bias_mean_hidden[i] = init_var("bias_mean_hidden_{}".format(i), [layer_size], init_value_max_magnitude)
+            self.weights_mean_hidden[i] = init_var("weights_mean_hidden_{}".format(i), [fanin_size, layer_size], init_value_max_magnitude)
+            self.hidden_mean_logits[i] = tf.add(tf.multiply(self.state, self.weights_mean_hidden[i]),
+                                           self.bias_mean_hidden[i], name="hidden_mean_logit_{}".format(i))
+            self.hidden_mean_output[i] = tf.nn.relu(self.hidden_mean_logits[i], name="hidden_mean_output_{}".format(i))
 
-
-        if hidden_size == 0:
-            self.mean = tf.add(tf.matmul(self.state, self.weights_mean),
-                               self.bias_mean)
-            self.stddev = tf.add(tf.matmul(self.state, self.weights_stddev),
-                                 self.bias_stddev)
-            self.normal_dist = tf.contrib.distributions.Normal(self.mean,
-                                                               self.stddev)
+            self.bias_stddev_hidden[i] = init_var("bias_stddev_hidden_{}".format(i), [layer_size], init_value_max_magnitude)
+            self.weights_stddev_hidden[i] = init_var("weights_stddev_hidden_{}".format(i), [fanin_size, layer_size], init_value_max_magnitude)
+            self.hidden_stddev_logits[i] = tf.add(tf.multiply(self.state, self.weights_stddev_hidden[i]),
+                                           self.bias_stddev_hidden[i], name="hidden_stddev_logit_{}".format(i))
+            self.hidden_stddev_output[i] = tf.nn.relu(self.hidden_stddev_logits[i], name="hidden_stddev_output_{}".format(i))
+        """
+        OUTPUTS 
+        """
+        fanin_size = state_size if len(hidden_size) == 0 else hidden_size[i - 1]
+        self.bias_mean = init_var("bias_mean", [action_size], init_value_max_magnitude)
+        self.weights_mean = init_var("weight_mean", [fanin_size, action_size], init_value_max_magnitude)
+        self.bias_stddev = init_var("bias_stddev", [action_size], init_value_max_magnitude)
+        self.weights_stddev = init_var("weight_stddev", [fanin_size, action_size], init_value_max_magnitude)
+        mean_input = self.state if len(hidden_size) == 0 else self.hidden_mean_output[-1]
+        print(mean_input)
+        print(self.weights_mean)
+        stddev_input = self.state if len(hidden_size) == 0 else self.hidden_stddev_output[-1]
+        self.mean = tf.add(tf.matmul(mean_input, self.weights_mean),
+                           self.bias_mean)
+        self.stddev = tf.add(tf.matmul(stddev_input, self.weights_stddev),
+                             self.bias_stddev)
+        self.normal_dist = tf.contrib.distributions.Normal(self.mean,
+                                                           self.stddev)
 
         self.action = self.normal_dist._sample_n(1)
 
