@@ -3,14 +3,15 @@ import numpy as np
 import time
 import numpy as np
 from collections import namedtuple
-from typing import Union
+from typing import Union, List
 
 EpisodeMemory = namedtuple('EpisodeMemory', 'state action reward')
 
 class MonteCarloPolicyGradient:
     def __init__(self, env, learning_rate: float, PolicyClass,
                  render: bool=False, entropy_weight: float=1e-2, saved_policy: str="",
-                 random_seed: Union[None, int]=None, reward_sma_len: Union[None, int]=None):
+                 random_seed: Union[None, int]=None, reward_sma_len: Union[None, int]=None,
+                 hidden_size:List[int]=[]):
         self.reward_sma_len = reward_sma_len
         if reward_sma_len is not None:
             self.reward_sma_array = np.ones(reward_sma_len)
@@ -18,9 +19,10 @@ class MonteCarloPolicyGradient:
         self.env = env
         self.action_space = env.action_space.shape[0]
         self.observation_space = env.observation_space.shape[0]
-        policy = PolicyClass(self.observation_space, self.action_space, random_seed=random_seed, hidden_size=[8])
+        policy = PolicyClass(self.observation_space, self.action_space, random_seed=random_seed,
+                             hidden_size=hidden_size)
         policy.loss = -(policy.normal_dist.log_prob(policy.applied_action) *
-                       policy.target + 1e-1 * policy.normal_dist.entropy())
+                       policy.target + entropy_weight * policy.normal_dist.entropy())
         policy.train = (tf.train.AdamOptimizer(learning_rate)
                         .minimize(policy.loss))
         policy.setup(saved_policy)
@@ -44,9 +46,9 @@ class MonteCarloPolicyGradient:
                 step_count += 1
                 action, action_clipped = self.policy.choose_action(state)
                 #print("numpy shape " + str(action.shape))
-                #print("action: " + str(action))
+                # print("action: " + str(action))
                 state_old = np.copy(state)
-                #print("state_old: " + str(state_old))
+                # print("state_old: " + str(state_old))
                 observation, reward, terminal, info = self.env.step(action_clipped)
                 self.env.render() if self.render else None
                 state = self.observation_state(observation)
