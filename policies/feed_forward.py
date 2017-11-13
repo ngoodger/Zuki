@@ -17,7 +17,6 @@ def variable_summaries(var):
 
 
 def init_var(name: str, size: list, init_value_max_magnitude: float):
-    print("HEELLLO" + str(size))
     return tf.Variable(tf.random_uniform(size,
                        -init_value_max_magnitude,
                        init_value_max_magnitude),
@@ -57,15 +56,19 @@ class FeedForwardPolicy():
         self.hidden_stddev_output = [None] * len(hidden_size)
         for i, layer_size in enumerate(hidden_size):
             fanin_size = state_size if i == 0 else hidden_size[i - 1]
+            mean_input = self.state if i == 0 else self.hidden_mean_output[-1]
+            stddev_input = self.state if i == 0 else self.hidden_stddev_output[-1]
             self.bias_mean_hidden[i] = init_var("bias_mean_hidden_{}".format(i), [layer_size], init_value_max_magnitude)
             self.weights_mean_hidden[i] = init_var("weights_mean_hidden_{}".format(i), [fanin_size, layer_size], init_value_max_magnitude)
-            self.hidden_mean_logits[i] = tf.add(tf.multiply(self.state, self.weights_mean_hidden[i]),
+            print(mean_input)
+            print(self.weights_mean_hidden[i])
+            self.hidden_mean_logits[i] = tf.add(tf.matmul(mean_input, self.weights_mean_hidden[i]),
                                            self.bias_mean_hidden[i], name="hidden_mean_logit_{}".format(i))
             self.hidden_mean_output[i] = tf.nn.relu(self.hidden_mean_logits[i], name="hidden_mean_output_{}".format(i))
 
             self.bias_stddev_hidden[i] = init_var("bias_stddev_hidden_{}".format(i), [layer_size], init_value_max_magnitude)
             self.weights_stddev_hidden[i] = init_var("weights_stddev_hidden_{}".format(i), [fanin_size, layer_size], init_value_max_magnitude)
-            self.hidden_stddev_logits[i] = tf.add(tf.multiply(self.state, self.weights_stddev_hidden[i]),
+            self.hidden_stddev_logits[i] = tf.add(tf.matmul(stddev_input, self.weights_stddev_hidden[i]),
                                            self.bias_stddev_hidden[i], name="hidden_stddev_logit_{}".format(i))
             self.hidden_stddev_output[i] = tf.nn.relu(self.hidden_stddev_logits[i], name="hidden_stddev_output_{}".format(i))
         """
@@ -82,6 +85,7 @@ class FeedForwardPolicy():
         stddev_input = self.state if len(hidden_size) == 0 else self.hidden_stddev_output[-1]
         self.mean = tf.add(tf.matmul(mean_input, self.weights_mean),
                            self.bias_mean)
+        print(self.mean)
         self.stddev = tf.add(tf.matmul(stddev_input, self.weights_stddev),
                              self.bias_stddev)
         self.normal_dist = tf.contrib.distributions.Normal(self.mean,
