@@ -11,7 +11,7 @@ def main():
     print(env.action_space)
     print(env.action_space.high)
     print(env.action_space.low)
-    learning_rate = 1e-3
+    learning_rate = 3e-2
     pg = MonteCarloPolicyGradient(env, learning_rate,
                                   FeedForwardPolicy, render=False)
     pg.run(1000000)
