@@ -1,5 +1,5 @@
 import gym
-from zuki.policies.feed_forward import FeedForwardPolicy
+from zuki.function_approximators.feed_forward import FeedForward
 from zuki.policy_gradient_methods.monte_carlo import MonteCarloPolicyGradient
 
 
