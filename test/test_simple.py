@@ -1,4 +1,4 @@
-from zuki.function_approximators.feed_forward import FeedForwardPolicy
+from zuki.policies.feed_forward_policy import FeedForwardPolicy
 from zuki.policy_gradient_methods.monte_carlo import MonteCarloPolicyGradient
 from zuki.envs.simple_continuous_action_env import SimpleContinuousActionEnv
 from typing import List
