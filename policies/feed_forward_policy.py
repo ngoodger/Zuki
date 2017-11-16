@@ -1,24 +1,12 @@
-import os
 import tensorflow as tf
 import numpy as np
 from typing import Union
+from zuki.helpers.helpers import variable_summaries
+from zuki.policies.policy_base import PolicyBase
 
-def variable_summaries(var):
-    name = var.op.name
-    """Attach a lot of summaries to a Tensor (for TensorBoard visualization)."""
-    with tf.name_scope(name + '_summaries'):
-        mean = tf.reduce_mean(var)
-        tf.summary.scalar('mean', mean)
-        with tf.name_scope('stddev'):
-            stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
-            tf.summary.scalar('stddev', stddev)
-            tf.summary.scalar('max', tf.reduce_max(var))
-            tf.summary.scalar('min', tf.reduce_min(var))
-            tf.summary.histogram('histogram', var)
 
-class FeedForwardPolicy():
-    def __init__(self, state_size: int,
-                 action_size: int, hidden_size: list=[],
+class FeedForwardPolicy(PolicyBase):
+    def __init__(self, state_size: int, action_size: int, hidden_size: list=[],
                  random_seed: Union[None, int]=None,
                  init_value_max_magnitude: float=0.1) -> None:
         tf.reset_default_graph()
@@ -28,20 +16,25 @@ class FeedForwardPolicy():
         """
         PLACEHOLDERS
         """
-        self.episode_reward= tf.placeholder(tf.float32, shape=[],
-                                    name="episode_reward")
+        self.episode_reward = tf.placeholder(tf.float32, shape=[],
+                                             name="episode_reward")
         self.state = tf.placeholder(tf.float32, [1, state_size], name="state")
         self.target = tf.placeholder(tf.float32, name="target")
-        self.applied_action = tf.placeholder(tf.float32,shape=[action_size], name="applied_action")
+        self.applied_action = tf.placeholder(tf.float32, shape=[action_size],
+                                             name="applied_action")
 
         self.mean_hidden, self.stddev_hidden = [], []
         with tf.variable_scope('variables', reuse=False):
             for i, layer_size in enumerate(hidden_size):
-                hidden_mean_input = self.state if i == 0 else self.hidden_mean_output[-1]
-                self.mean_hidden.append(tf.layers.dense(inputs=hidden_mean_input,
+                hidden_mean_in = (self.state if i == 0
+                                     else self.hidden_mean_output[-1])
+                hidden_stddev_in = (self.state if i == 0
+                                     else self.hidden_stddev_output[-1])
+                mean_layer_name = "mean_hidden_{}".format(i)
+                self.mean_hidden.append(tf.layers.dense(inputs=hidden_mean_in,
                                                         units=layer_size,
                                                         activation=tf.nn.relu,
-                                                        name="mean_hidden_{}".format(i)))
+                                                        name=mean_layer_name))
                 self.stddev_hidden.append(tf.layers.dense(inputs=hidden_mean_input,
                                                           units=layer_size,
                                                           activation=tf.nn.relu,
@@ -81,7 +74,7 @@ class FeedForwardPolicy():
         self.train_writer = tf.summary.FileWriter("./train",
                                                       self.sess.graph)
 
-    def choose_action(self, state: np.array):
+    def choose_action(self, state: np.array) -> np.array:
         return self.sess.run((self.action, self.action_clipped), {self.state: state})
 
 
@@ -96,17 +89,8 @@ class FeedForwardPolicy():
         _, step_loss = self.sess.run(ops, feed_dict)
         return step_loss
 
-    def save_tensorboard(self, episode_reward):
+    def save_tensorboard(self, episode_reward: float) -> None:
         feed_dict={self.episode_reward: episode_reward}
         summary = self.sess.run(self.merged, feed_dict)
         self.train_writer.add_summary(summary, self.save_idx)
         self.save_idx += 1
-
-    def get_model_parameters(self):
-       # Get trainable parameter names. 
-       variable_names = [var.name for var in 
-                tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)]
-       # Get trainable parameter values. 
-       snapshot = self.sess.run(variable_names)  
-       model_parameters = dict(zip(variable_names, snapshot))
-       return model_parameters 
